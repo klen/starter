@@ -1,0 +1,10 @@
+build
+docs/_build
+dist
+*.egg*
+.ropeproject
+*.pyc
+.sass-cache
+._
+.tox
+.env

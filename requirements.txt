@@ -1,0 +1,2 @@
+Inirama>=0.2.2
+Jinja>=1.2
