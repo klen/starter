@@ -1,10 +1,11 @@
-build
-docs/_build
-dist
 *.egg*
-.ropeproject
 *.pyc
-.sass-cache
 ._
-.tox
 .env
+.ropeproject
+.sass-cache
+.tox
+.vimrc
+build
+dist
+docs/_build

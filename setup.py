@@ -8,7 +8,7 @@ Starter -- Create the skeleton for new projects.
 
 """
 
-import os
+from os import path as op
 
 from setuptools import setup
 
@@ -17,10 +17,9 @@ from starter import __version__, __project__, __license__
 
 def read(fname):
     try:
-        return open(os.path.join(os.path.dirname(__file__), fname)).read()
+        return open(op.join(op.dirname(__file__), fname)).read()
     except IOError:
         return ''
-
 
 setup(
     name=__project__,
@@ -47,6 +46,6 @@ setup(
     },
 
     py_modules=['starter'],
-    install_requires = read('requirements.txt').split(),
+    install_requires = [l for l in read('requirements.txt').split('\n') if l and not l.startswith('#')],
     test_suite = 'tests',
 )

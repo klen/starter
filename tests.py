@@ -1,10 +1,11 @@
-from logging import INFO, getLogger
+from os import path as op
+
+from inirama import Namespace
+from logging import INFO
 from unittest import TestCase
 
-from os import path as op
 from starter.core import Starter, Template
 from starter.main import PARSER
-from inirama import Namespace
 
 
 TESTDIR = op.join(op.dirname(__file__), 'tests')
@@ -16,24 +17,31 @@ class StarterTests(TestCase):
         self.params = PARSER.parse_args(['test'])
 
     def test_template(self):
-        t = Template('custom', Namespace(
-            template_dir=TESTDIR
-        ), getLogger())
+        ns = Namespace(template_dir=TESTDIR)
+        t = Template('custom', ns)
         self.assertEqual(t.path, op.join(TESTDIR, 'custom'))
         files = list(t.files)
-        self.assertEqual(len(files), 2)
+        self.assertEqual(len(files), 3)
+
+        t1 = Template('custom', ns)
+        self.assertEqual(t, t1)
+
+        self.assertEqual(
+            set((Template('custom', ns), Template('include', ns), Template('include', ns))),
+            set((Template('custom', ns), Template('include', ns)))
+        )
 
     def test_base(self):
         self.params.config = op.join(TESTDIR, 'custom.ini')
 
         starter = Starter(self.params, curdir=TESTDIR)
-        self.assertEqual(starter.context['curdir'], TESTDIR)
-        self.assertEqual(starter.context['deploy_dir'], op.dirname(TESTDIR))
-        self.assertEqual(starter.context['template_dir'], op.dirname(TESTDIR))
-        self.assertEqual(starter.context['customkey'], 'customvalue')
+        self.assertEqual(starter.parser.default['current_dir'], TESTDIR)
+        self.assertEqual(starter.parser.default['deploy_dir'], op.dirname(TESTDIR))
+        self.assertEqual(starter.parser.default['template_dir'], op.dirname(TESTDIR))
+        self.assertEqual(starter.parser.default['customkey'], 'customvalue')
         self.assertEqual(starter.logger.level, INFO)
 
-    def test_start(self):
+    def test_copy(self):
         from tempfile import mkdtemp
 
         target_dir = mkdtemp()
@@ -43,12 +51,27 @@ class StarterTests(TestCase):
         self.params.target = target_dir
 
         starter = Starter(self.params, curdir=target_dir)
-        self.assertEqual(
-            starter.parser.default['deploy_dir'],
-            target_dir
-        )
-        starter.start()
+        self.assertEqual(starter.parser.default['deploy_dir'], target_dir)
 
-        self.assertTrue(op.isfile(op.join(
-            target_dir, 'custom', 'root_file'
-        )))
+        starter.copy()
+
+        self.assertTrue(op.isfile(op.join(target_dir, 'root_file')))
+        self.assertTrue(op.isfile(op.join(target_dir, 'dir', 'file')))
+        t = op.join(target_dir, 'dir', 'template')
+        b = open(t).read()
+        self.assertTrue(target_dir in b)
+        self.assertTrue(TESTDIR in b)
+        self.assertTrue('customvalue' in b)
+
+    def test_template_not_found(self):
+        self.params.TEMPLATES = ['custom2']
+        starter = Starter(self.params, curdir=TESTDIR)
+        try:
+            starter.copy()
+        except AssertionError, e:
+            self.assertTrue(e)
+        except:
+            raise
+
+    def test_template_context(self):
+        pass

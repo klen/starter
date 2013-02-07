@@ -28,7 +28,7 @@ PARSER.add_argument(
 def main(*args):
     params = PARSER.parse_args(args)
     starter = Starter(params)
-    starter.start()
+    starter.copy()
 
 
 if __name__ == '__main__':

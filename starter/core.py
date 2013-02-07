@@ -3,6 +3,7 @@ import logging
 import sys
 import shutil
 from os import path as op, walk, environ, makedirs
+from jinja2 import Environment, FileSystemLoader
 
 from . import CFGFILE, CURDIR
 
@@ -62,7 +63,6 @@ class FS(object):
     """ File system interface.
     """
     def __init__(self, logger=None):
-        assert isinstance(logger, logging.Logger)
         self.logger = logger
 
     def make_directory(self, path):
@@ -70,7 +70,7 @@ class FS(object):
         """
         try:
             makedirs(path)
-            self.logger.info('Directory created: {0}'.format(path))
+            self.logger and self.logger.info('Directory created: {0}'.format(path))
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
@@ -81,20 +81,26 @@ class FS(object):
         if not op.exists(op.dirname(to_path)):
             self.make_directory(op.dirname(to_path))
 
-        shutil.copy()
-        self.logger.info('File copied: {0}'.format(to_path))
+        shutil.copy(from_path, to_path)
+        self.logger and self.logger.info('File copied: {0}'.format(to_path))
 
 
 class Template(FS):
 
-    tmpl_ext = 'tmpl'
+    tmpl_ext = '.tmpl'
 
-    def __init__(self, name, ns, logger):
+    def __init__(self, name, ns, logger=None):
+        self.name = name
+
         path = ns['templates'].get(name, name)
+
         self.path = (path or '').rstrip(op.sep)
         if not op.exists(self.path):
             self.path = op.join(ns.default['template_dir'], self.path)
         assert op.exists(self.path), "Template not found."
+
+        self.env = Environment(loader=FileSystemLoader(self.path))
+
         super(Template, self).__init__(logger)
 
     @property
@@ -103,12 +109,26 @@ class Template(FS):
             for f in filter(lambda x: x != CFGFILE, files):
                 source = op.join(root, f)
                 target = op.relpath(source, self.path)
-                tmpl = op.splitext(f)[1][1:] == self.tmpl_ext
-                yield source, target[:-5] if tmpl else target, tmpl
+                yield source, target
 
     def paste(self, deploy_dir, **context):
-        for source, rel, tmpl in self.files:
-            pass
+        for source, rel in self.files:
+            target = op.join(deploy_dir, rel)
+            if not rel.endswith(self.tmpl_ext):
+                self.copy_file(source, target)
+                continue
+
+            with open(target[:-len(self.tmpl_ext)], 'w') as f:
+                t = self.env.get_template(rel)
+                f.write(t.render(**context))
+
+    def __eq__(self, other):
+        if isinstance(other, Template):
+            return other.name == self.name
+        return False
+
+    def __hash__(self):
+        return hash(self.name)
 
     def __repr__(self):
         return "<Template: {0}>".format(self.path)
@@ -134,35 +154,35 @@ class Starter(FS):
         super(Starter, self).__init__(self.logger)
 
     def setup_logger(self, level='info'):
+        """ Set logging.
+        """
         self.logger = logging.getLogger('Starter')
         self.logger.setLevel(level.upper())
         self.logger.addHandler(STREAM_HANDLER)
 
     def setup_parser(self, *cfg_files):
+        """ Load configuration.
+        """
         from inirama import InterpolationNamespace
 
         self.parser = InterpolationNamespace(
-            curdir=self.curdir,
+            current_dir=self.curdir,
             deploy_dir=self.params.target,
             template_dir=self.params.source)
         cfg_files = cfg_files or self.default_configs
         self.parser.read(*cfg_files)
         self.parser.read(self.params.config)
 
-    def start(self):
-        """ Clone all templates.
+    def copy(self):
+        """ Copy structure.
         """
-        map(self.clone, self.params.TEMPLATES)
+        templates = set(self.params.TEMPLATES)
 
-    def clone(self, template_name):
-        template = Template(template_name, self.parser, self.logger)
-        template.paste(self.parser.default['deploy_dir'])
+        def paste(tname):
+            t = Template(tname, self.parser, self.logger)
+            t.paste(**self.parser.default)
 
-    @property
-    def context(self):
-        """ Return template's context.
-        """
-        return self.parser.default
+        return map(paste, templates)
 
     def __repr__(self):
         return "<Starter '{0}'>".format(self.curdir)

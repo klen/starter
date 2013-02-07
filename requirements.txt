@@ -1,2 +1,4 @@
+# Development requirements
 Inirama>=0.2.3
 Jinja2>=2.6
+ipdb
