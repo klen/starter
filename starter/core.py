@@ -1,9 +1,12 @@
 import errno
-import logging
 import sys
-import shutil
 from os import path as op, walk, environ, makedirs
+
+import logging
+import shutil
+from functools import partial
 from jinja2 import Environment, FileSystemLoader
+from oset import oset
 
 from . import CFGFILE, CURDIR
 
@@ -88,6 +91,7 @@ class FS(object):
 class Template(FS):
 
     tmpl_ext = '.tmpl'
+    cfg_etx = '.ini'
 
     def __init__(self, name, ns, logger=None):
         self.name = name
@@ -111,6 +115,10 @@ class Template(FS):
                 target = op.relpath(source, self.path)
                 yield source, target
 
+    @property
+    def configuration(self):
+        return op.join(op.dirname(self.path), '{0}{1}'.format(self.name, self.cfg_etx))
+
     def paste(self, deploy_dir, **context):
         for source, rel in self.files:
             target = op.join(deploy_dir, rel)
@@ -128,7 +136,7 @@ class Template(FS):
         return False
 
     def __hash__(self):
-        return hash(self.name)
+        return hash(self.path)
 
     def __repr__(self):
         return "<Template: {0}>".format(self.path)
@@ -140,6 +148,7 @@ class Starter(FS):
         environ.get('HOME', '~'),
         CURDIR
     ])
+    include_key = '__include__'
 
     def __init__(self, params, curdir=None, cfg_files=None):
         self.params = params
@@ -148,7 +157,7 @@ class Starter(FS):
         self.setup_logger(params.level)
         self.setup_parser(*(cfg_files or []))
 
-        self.logger.info('Starting templates: ' + str(self.params.TEMPLATES))
+        self.logger.info('Copy templates: ' + str(self.params.TEMPLATES))
 
         self.make_directory(params.target)
         super(Starter, self).__init__(self.logger)
@@ -176,13 +185,34 @@ class Starter(FS):
     def copy(self):
         """ Copy structure.
         """
-        templates = set(self.params.TEMPLATES)
+        templates = self.prepare_templates()
+        self.parser.default['templates'] = ','.join(t.name for t in templates)
+        return map(lambda t: t.paste(**self.parser.default), templates)
 
-        def paste(tname):
-            t = Template(tname, self.parser, self.logger)
-            t.paste(**self.parser.default)
+    def prepare_templates(self):
 
-        return map(paste, templates)
+        to_templates = partial(map, lambda t: Template(t, self.parser))
+        templates = to_templates(self.params.TEMPLATES)
+        cache = set(templates)
+
+        def open_templates(*templates):
+
+            for t in templates:
+                self.parser.read(t.configuration)
+                cache.add(t)
+
+                try:
+                    include = self.parser['templates'].pop(self.include_key)
+                    include = filter(lambda x: x, oset(include.replace(' ', '').split(',')))
+                    requirements = filter(lambda t: not t in cache, to_templates(include))
+                    for tt in open_templates(*requirements):
+                        yield tt
+                except KeyError:
+                    pass
+
+                yield t
+
+        return list(open_templates(*templates))
 
     def __repr__(self):
         return "<Starter '{0}'>".format(self.curdir)
