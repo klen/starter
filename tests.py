@@ -16,18 +16,6 @@ class StarterTests(TestCase):
     def setUp(self):
         self.params = PARSER.parse_args(['test'])
 
-    # def test_tools(self):
-        # from starter.tools import flatten
-        # self.assertEqual(
-            # list(flatten([1, [2, 3]])),
-            # [1, 2, 3]
-        # )
-
-        # self.assertEqual(
-            # list(flatten([1, [2, [3, 4], 5], 6, [7, [8, [9]]]])),
-            # [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        # )
-
     def test_template(self):
         ns = Namespace(template_dir=TESTDIR)
         t = Template('custom', ns)
@@ -70,11 +58,11 @@ class StarterTests(TestCase):
         self.assertTrue(op.isfile(op.join(target_dir, 'root_file')))
         self.assertTrue(op.isfile(op.join(target_dir, 'dir', 'file')))
         t = op.join(target_dir, 'dir', 'template')
-        b = open(t).read()
-        self.assertTrue(target_dir in b)
-        self.assertTrue(TESTDIR in b)
-        self.assertTrue('customvalue' in b)
-        self.assertTrue('<include,john,custom>' in b)
+        body = open(t).read()
+        self.assertTrue(target_dir in body)
+        self.assertTrue(TESTDIR in body)
+        self.assertTrue('customvalue' in body)
+        self.assertTrue('={0}='.format(starter.parser.default['USER']) in body)
 
     def test_template_not_found(self):
         self.params.TEMPLATES = ['custom2']

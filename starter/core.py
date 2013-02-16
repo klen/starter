@@ -177,7 +177,9 @@ class Starter(FS):
         self.parser = InterpolationNamespace(
             current_dir=self.curdir,
             deploy_dir=self.params.target,
-            template_dir=self.params.source)
+            template_dir=self.params.source,
+            USER=environ.get("USER"),
+        )
         cfg_files = cfg_files or self.default_configs
         self.parser.read(*cfg_files)
         self.parser.read(self.params.config)
