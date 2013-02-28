@@ -1,5 +1,6 @@
 *.egg*
 *.pyc
+.DS_Store
 ._
 .env
 .ropeproject

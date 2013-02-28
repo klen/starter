@@ -1,10 +1,10 @@
 from os import path as op
 
-from inirama import Namespace
-from logging import INFO
+from tempfile import mkdtemp
 from unittest import TestCase
 
 from starter.core import Starter, Template
+from starter.log import setup_logging
 from starter.main import PARSER
 
 
@@ -15,42 +15,53 @@ class StarterTests(TestCase):
 
     def setUp(self):
         self.params = PARSER.parse_args(['test'])
+        setup_logging(0)
 
     def test_template(self):
-        ns = Namespace(template_dir=TESTDIR)
-        t = Template('custom', ns)
-        self.assertEqual(t.path, op.join(TESTDIR, 'custom'))
-        files = list(t.files)
-        self.assertEqual(len(files), 3)
 
-        t1 = Template('custom', ns)
+        t = Template('django', source='starter/templates/python/django')
+        self.assertEqual(t.configuration, 'starter/templates/python/django.ini')
+
+        t = Template('custom', tplparams=dict(custom=op.join(TESTDIR, 'custom')))
+        self.assertEqual(t.name, 'custom')
+
+        t = Template('python.module')
+        self.assertEqual(t.configuration, 'starter/templates/python/module.ini')
+        self.assertEqual(t.path, 'starter/templates/python/module')
+
+        T = lambda n: Template(n, tpldirs=[TESTDIR])
+
+        # Check base template properties
+        t = T('custom')
+        self.assertEqual(t.path, op.join(TESTDIR, 'custom'))
+        self.assertEqual(len(list(t.files)), 4)
+        self.assertEqual(t.configuration, op.join(TESTDIR, 'custom.ini'))
+
+        t1 = T('custom')
         self.assertEqual(t, t1)
 
         self.assertEqual(
-            set((Template('custom', ns), Template('include', ns), Template('include', ns))),
-            set((Template('custom', ns), Template('include', ns)))
+            set((T('custom'), T('include'), T('include'))),
+            set((T('custom'), T('include')))
         )
 
-    def test_base(self):
+    def test_starter_init(self):
         self.params.config = op.join(TESTDIR, 'custom.ini')
-
-        starter = Starter(self.params, curdir=TESTDIR)
-        self.assertEqual(starter.parser.default['current_dir'], TESTDIR)
+        starter = Starter(self.params, TESTDIR)
         self.assertEqual(starter.parser.default['deploy_dir'], op.dirname(TESTDIR))
-        self.assertEqual(starter.parser.default['template_dir'], op.dirname(TESTDIR))
         self.assertEqual(starter.parser.default['customkey'], 'customvalue')
-        self.assertEqual(starter.logger.level, INFO)
 
-    def test_copy(self):
-        from tempfile import mkdtemp
+        self.params.context = [('foo', 'bar')]
+        starter = Starter(self.params, TESTDIR)
+        self.assertEqual(starter.parser.default['foo'], 'bar')
 
+    def test_starter_copy(self):
         target_dir = mkdtemp()
 
         self.params.TEMPLATES = ['custom']
-        self.params.source = TESTDIR
         self.params.target = target_dir
 
-        starter = Starter(self.params, curdir=target_dir)
+        starter = Starter(self.params, TESTDIR)
         self.assertEqual(starter.parser.default['deploy_dir'], target_dir)
 
         starter.copy()
@@ -60,16 +71,32 @@ class StarterTests(TestCase):
         t = op.join(target_dir, 'dir', 'template')
         body = open(t).read()
         self.assertTrue(target_dir in body)
-        self.assertTrue(TESTDIR in body)
         self.assertTrue('customvalue' in body)
-        self.assertTrue('={0}='.format(starter.parser.default['USER']) in body)
+        self.assertTrue('boss = {0}'.format(starter.parser.default['USER']) in body)
+
+        f = op.join(target_dir, 'test_customvalue.ls')
+        self.assertTrue(open(f))
 
     def test_template_not_found(self):
         self.params.TEMPLATES = ['custom2']
-        starter = Starter(self.params, curdir=TESTDIR)
+        starter = Starter(self.params, TESTDIR)
         try:
             starter.copy()
         except AssertionError, e:
             self.assertTrue(e)
         except:
             raise
+
+    def test_builtin_templates(self):
+        target_dir = mkdtemp()
+        self.params.TEMPLATES = ['python.module']
+        self.params.target = target_dir
+
+        starter = Starter(self.params)
+        self.params.target = mkdtemp()
+        starter.parser.default['AUTHOR_NAME'] = 'John Conor'
+
+        starter.copy()
+        self.assertEqual(starter.parser.default['AUTHOR_NAME'], 'John Conor')
+        body = open(op.join(target_dir, 'LICENSE')).read()
+        self.assertTrue("Copyright (c) {0} by {1}".format(starter.parser.default['datetime'][:4], starter.parser.default['AUTHOR_NAME']) in body)

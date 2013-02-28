@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+
+"""
+{{ MODULE }}
+{{ '-' * MODULE|length }}
+
+{{ MODULE }} -- Description
+
+"""
+
+from os import path as op
+
+from setuptools import setup
+
+from {{ MODULE }} import __version__, __project__, __license__
+
+
+def read(fname):
+    try:
+        return open(op.join(op.dirname(__file__), fname)).read()
+    except IOError:
+        return ''
+
+setup(
+    name=__project__,
+    version=__version__,
+    license=__license__,
+    description=read('DESCRIPTION'),
+    long_description=read('README.rst'),
+    platforms=('Any'),
+
+    author='{{ AUTHOR_NAME }}',
+    author_email='{{ AUTHOR_EMAIL }}',
+    url='{{ MODULE }}',
+    classifiers=[
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+    ],
+
+    py_modules=['{{ MODULE }}'],
+    install_requires = [l for l in read('requirements.txt').split('\n') if l and not l.startswith('#')],
+    test_suite = 'tests',
+)
+

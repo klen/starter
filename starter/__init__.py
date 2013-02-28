@@ -3,7 +3,7 @@
     Similar to the template part of PasteScript, but uses Jinja templates.
 
 """
-from os import getcwd
+from os import getcwd, path as op
 
 # Module information
 # ==================
@@ -19,3 +19,4 @@ __license__ = "BSD"
 
 CFGFILE = '.starter.ini'
 CURDIR = getcwd()
+TPLDIR = op.relpath(op.join(op.dirname(__file__), 'templates'))
