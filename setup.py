@@ -10,7 +10,7 @@ Starter -- Create the skeleton for new projects.
 
 from os import path as op
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 from starter import __version__, __project__, __license__
 
@@ -41,11 +41,11 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'clone = starter:main',
+            'starter = starter.main:run',
         ]
     },
 
-    py_modules=['starter'],
+    packages = find_packages(),
     install_requires = [l for l in read('requirements.txt').split('\n') if l and not l.startswith('#')],
     test_suite = 'tests',
 )

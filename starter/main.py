@@ -27,7 +27,7 @@ PARSER.add_argument(
     version=__version__, help='Show {0} version'.format(__project__))
 
 
-if __name__ == '__main__':
+def run():
     args = sys.argv[1:]
     params = PARSER.parse_args(args)
 
@@ -37,7 +37,19 @@ if __name__ == '__main__':
     from .core import Starter
 
     # Prepare user context
-    context = dict()
-    params.context = [next(m) for m in [izip_longest(fillvalue='', *([iter(p.split(':'))] * 2)) for p in params.context]]
+    params.context = [
+        next(m)
+        for m in [
+            izip_longest(fillvalue='', *([iter(p.split(':'))] * 2))
+            for p in params.context]]
+
     starter = Starter(params)
-    starter.copy()
+    try:
+        starter.copy()
+    except Exception, e:
+        import logging
+        logging.error(e)
+
+
+if __name__ == '__main__':
+    run()

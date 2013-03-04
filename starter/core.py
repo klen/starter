@@ -58,7 +58,7 @@ class Template(FS):
         self.path = source
         while not op.exists(self.path) and tpldirs:
             self.path = op.join(tpldirs.pop(), source)
-        assert op.exists(self.path), "Template not found."
+        assert op.exists(self.path), "Template `{0}` not found.".format(name)
 
         self.env = Environment(loader=FileSystemLoader(self.path))
 

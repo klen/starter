@@ -19,8 +19,8 @@ class StarterTests(TestCase):
 
     def test_template(self):
 
-        t = Template('django', source='starter/templates/python/django')
-        self.assertEqual(t.configuration, 'starter/templates/python/django.ini')
+        t = Template('django', source='starter/templates/python/module')
+        self.assertEqual(t.configuration, 'starter/templates/python/module.ini')
 
         t = Template('custom', tplparams=dict(custom=op.join(TESTDIR, 'custom')))
         self.assertEqual(t.name, 'custom')

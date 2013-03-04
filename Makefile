@@ -26,8 +26,8 @@ register:
 
 .PHONY: upload
 # target: upload - Upload module on PyPi
-upload:
-	@python setup.py sdist upload || echo 'Upload already'
+upload: dist
+	@python setup.py upload || echo 'Upload already'
 
 .PHONY: test
 # target: test - Runs tests
@@ -51,3 +51,6 @@ pep8:
 .env: requirements.txt
 	virtualenv --no-site-packages .env
 	.env/bin/pip install -M -r requirements.txt
+
+dist: clean
+	@python setup.py sdist
