@@ -8,7 +8,7 @@ Starter -- Create the skeleton for new projects.
 
 """
 
-from os import path as op
+from os import path as op, walk
 
 from setuptools import setup, find_packages
 
@@ -20,6 +20,11 @@ def read(fname):
         return open(op.join(op.dirname(__file__), fname)).read()
     except IOError:
         return ''
+
+package_data = ['*.ini', '*.sh']
+for root, dirs, files in walk(op.join(__project__, 'templates')):
+    for filename in files:
+        package_data.append("%s/%s" % (root[len(__project__) + 1:], filename))
 
 setup(
     name=__project__,
@@ -46,6 +51,7 @@ setup(
     },
 
     packages = find_packages(),
+    package_data=dict(starter=package_data),
     install_requires = [l for l in read('requirements.txt').split('\n') if l and not l.startswith('#')],
     test_suite = 'tests',
 )

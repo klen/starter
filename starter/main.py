@@ -10,11 +10,11 @@ from itertools import izip_longest
 
 PARSER = ArgumentParser(description=__doc__)
 PARSER.add_argument(
-    'TEMPLATES', nargs='+', help='Clone templates')
+    'TEMPLATES', help='Clone templates (comma separated list)')
+PARSER.add_argument(
+    'TARGET', nargs='?', default=CURDIR, help='Target path')
 PARSER.add_argument(
     '-s', dest='source', help='Template\'s source')
-PARSER.add_argument(
-    '-t', dest='target', default=CURDIR, help='Target path')
 PARSER.add_argument(
     '-l', dest='level', default='info', help='Verbose level (info)',
     choices=['debug', 'info', 'warn', 'error', 'critical'])
@@ -27,9 +27,10 @@ PARSER.add_argument(
     version=__version__, help='Show {0} version'.format(__project__))
 
 
-def run():
-    args = sys.argv[1:]
+def run(*args):
+    args = args or sys.argv[1:]
     params = PARSER.parse_args(args)
+    params.TEMPLATES = filter(None, params.TEMPLATES.split(','))
 
     from .log import setup_logging
     setup_logging(params.level.upper())

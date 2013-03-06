@@ -5,6 +5,11 @@
 """
 from os import getcwd, path as op
 
+# Declare Namespace
+# =================
+__import__('pkg_resources').declare_namespace(__name__)
+
+
 # Module information
 # ==================
 

@@ -41,15 +41,15 @@ audit:
 
 .PHONY: docs
 docs:
-	python setup.py build_sphinx --source-dir=docs/ --build-dir=docs/_build --all-files
-	python setup.py upload_sphinx --upload-dir=docs/_build/html
+	@python setup.py build_sphinx --source-dir=docs/ --build-dir=docs/_build --all-files
+	@python setup.py upload_sphinx --upload-dir=docs/_build/html
 
 .PHONY: pep8
 pep8:
-	find $(MODULE) -name "*.py" | xargs -n 1 autopep8 -i
+	@find $(MODULE) -name "*.py" | xargs -n 1 autopep8 -i
 
 .env: requirements.txt
-	virtualenv --no-site-packages .env
+	@virtualenv --no-site-packages .env
 	.env/bin/pip install -M -r requirements.txt
 
 dist: clean

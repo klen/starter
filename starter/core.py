@@ -52,7 +52,7 @@ class Template(FS):
         self.name = name
 
         tplparams = tplparams or dict()
-        source = (source or tplparams.get(name, name)).rstrip(op.sep).replace('.', op.sep)
+        source = (source or tplparams.get(name, name))
         tpldirs = list(self.dirs + (tpldirs or []))
 
         self.path = source
@@ -119,7 +119,7 @@ class Starter(FS):
         self.tpldirs = list(tpldirs)
         self.parser = InterpolationNamespace(
             current_dir=CURDIR,
-            deploy_dir=self.params.target,
+            deploy_dir=self.params.TARGET,
             datetime=datetime.now(),
             USER=environ.get("USER"),
             **dict(params.context)
@@ -133,7 +133,7 @@ class Starter(FS):
         templates = self.prepare_templates()
         self.parser.default['templates'] = tt = ','.join(t.name for t in templates)
         logging.warning("Paste templates: {0}".format(tt))
-        self.make_directory(self.params.target)
+        self.make_directory(self.params.TARGET)
         return map(lambda t: t.paste(**self.parser.default), templates)
 
     def prepare_templates(self):

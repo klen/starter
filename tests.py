@@ -19,15 +19,15 @@ class StarterTests(TestCase):
 
     def test_template(self):
 
-        t = Template('django', source='starter/templates/python/module')
-        self.assertEqual(t.configuration, 'starter/templates/python/module.ini')
+        t = Template('django', source='starter/templates/python-module')
+        self.assertEqual(t.configuration, 'starter/templates/python-module.ini')
 
         t = Template('custom', tplparams=dict(custom=op.join(TESTDIR, 'custom')))
         self.assertEqual(t.name, 'custom')
 
-        t = Template('python.module')
-        self.assertEqual(t.configuration, 'starter/templates/python/module.ini')
-        self.assertEqual(t.path, 'starter/templates/python/module')
+        t = Template('python-module')
+        self.assertEqual(t.configuration, 'starter/templates/python-module.ini')
+        self.assertEqual(t.path, 'starter/templates/python-module')
 
         T = lambda n: Template(n, tpldirs=[TESTDIR])
 
@@ -59,7 +59,7 @@ class StarterTests(TestCase):
         target_dir = mkdtemp()
 
         self.params.TEMPLATES = ['custom']
-        self.params.target = target_dir
+        self.params.TARGET = target_dir
 
         starter = Starter(self.params, TESTDIR)
         self.assertEqual(starter.parser.default['deploy_dir'], target_dir)
@@ -89,11 +89,11 @@ class StarterTests(TestCase):
 
     def test_builtin_templates(self):
         target_dir = mkdtemp()
-        self.params.TEMPLATES = ['python.module']
-        self.params.target = target_dir
+        self.params.TEMPLATES = ['python-module']
+        self.params.TARGET = target_dir
 
         starter = Starter(self.params)
-        self.params.target = mkdtemp()
+        self.params.TARGET = mkdtemp()
         starter.parser.default['AUTHOR_NAME'] = 'John Conor'
 
         starter.copy()
