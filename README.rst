@@ -26,6 +26,7 @@ Installation
 Usage
 =====
 ::
+
     $ starter --help
     usage: starter [-h] [-s SOURCE] [-l {debug,info,warn,error,critical}]
                 [-c CONFIG] [-x [CONTEXT [CONTEXT ...]]] [-v]
