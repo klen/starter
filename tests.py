@@ -26,8 +26,8 @@ class StarterTests(TestCase):
         self.assertEqual(t.name, 'custom')
 
         t = Template('python-module')
-        self.assertEqual(t.configuration, 'starter/templates/python-module.ini')
-        self.assertEqual(t.path, 'starter/templates/python-module')
+        self.assertEqual(op.basename(t.configuration), 'python-module.ini')
+        self.assertTrue(t.path.endswith('starter/templates/python-module'))
 
         T = lambda n: Template(n, tpldirs=[TESTDIR])
 
@@ -63,6 +63,8 @@ class StarterTests(TestCase):
 
         starter = Starter(self.params, TESTDIR)
         self.assertEqual(starter.parser.default['deploy_dir'], target_dir)
+        templates = starter.prepare_templates()
+        self.assertTrue(templates)
 
         starter.copy()
 
@@ -82,7 +84,7 @@ class StarterTests(TestCase):
         starter = Starter(self.params, TESTDIR)
         try:
             starter.copy()
-        except AssertionError, e:
+        except AssertionError as e:
             self.assertTrue(e)
         except:
             raise

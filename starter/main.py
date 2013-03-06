@@ -2,7 +2,10 @@ import sys
 from argparse import ArgumentParser
 
 from . import CURDIR, __version__, __project__
-from itertools import izip_longest
+try:
+    from itertools import izip_longest as zip_longest
+except ImportError:
+    from itertools import zip_longest
 
 
 # Command line parser
@@ -41,16 +44,18 @@ def run(*args):
     params.context = [
         next(m)
         for m in [
-            izip_longest(fillvalue='', *([iter(p.split(':'))] * 2))
+            zip_longest(fillvalue='', *([iter(p.split(':'))] * 2))
             for p in params.context]]
 
     starter = Starter(params)
     try:
         starter.copy()
-    except Exception, e:
+    except Exception as e:
         import logging
         logging.error(e)
 
 
 if __name__ == '__main__':
     run()
+
+# pymode:lint_ignore=W801
