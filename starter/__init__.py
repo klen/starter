@@ -5,15 +5,11 @@
 """
 from os import getcwd, path as op
 
-# Declare Namespace
-# =================
-__import__('pkg_resources').declare_namespace(__name__)
-
 
 # Module information
 # ==================
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __project__ = 'Starter'
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "BSD"
