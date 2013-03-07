@@ -1,0 +1,4 @@
+{{ datetime[:10] }}  {{ AUTHOR }}
+
+	* Version 0.1.0
+	* Initial release

@@ -26,8 +26,8 @@ class StarterTests(TestCase):
         self.assertEqual(t.name, 'custom')
 
         t = Template('python-module')
-        self.assertEqual(t.configuration, 'starter/templates/python-module.ini')
-        self.assertEqual(t.path, 'starter/templates/python-module')
+        self.assertEqual(op.basename(t.configuration), 'python-module.ini')
+        self.assertTrue(t.path.endswith('starter/templates/python-module'))
 
         T = lambda n: Template(n, tpldirs=[TESTDIR])
 
@@ -63,26 +63,30 @@ class StarterTests(TestCase):
 
         starter = Starter(self.params, TESTDIR)
         self.assertEqual(starter.parser.default['deploy_dir'], target_dir)
+        templates = starter.prepare_templates()
+        self.assertTrue(templates)
 
         starter.copy()
 
         self.assertTrue(op.isfile(op.join(target_dir, 'root_file')))
         self.assertTrue(op.isfile(op.join(target_dir, 'dir', 'file')))
         t = op.join(target_dir, 'dir', 'template')
-        body = open(t).read()
-        self.assertTrue(target_dir in body)
-        self.assertTrue('customvalue' in body)
-        self.assertTrue('boss = {0}'.format(starter.parser.default['USER']) in body)
+        with open(t) as f:
+            body = f.read()
+            self.assertTrue(target_dir in body)
+            self.assertTrue('customvalue' in body)
+            self.assertTrue('boss = {0}'.format(starter.parser.default['USER']) in body)
 
         f = op.join(target_dir, 'test_customvalue.ls')
-        self.assertTrue(open(f))
+        with open(f) as f:
+            self.assertTrue(f)
 
     def test_template_not_found(self):
         self.params.TEMPLATES = ['custom2']
         starter = Starter(self.params, TESTDIR)
         try:
             starter.copy()
-        except AssertionError, e:
+        except AssertionError as e:
             self.assertTrue(e)
         except:
             raise
@@ -98,5 +102,6 @@ class StarterTests(TestCase):
 
         starter.copy()
         self.assertEqual(starter.parser.default['AUTHOR_NAME'], 'John Conor')
-        body = open(op.join(target_dir, 'LICENSE')).read()
-        self.assertTrue("Copyright (c) {0} by {1}".format(starter.parser.default['datetime'][:4], starter.parser.default['AUTHOR_NAME']) in body)
+        with open(op.join(target_dir, 'LICENSE')) as f:
+            body = f.read()
+            self.assertTrue("Copyright (c) {0} by {1}".format(starter.parser.default['datetime'][:4], starter.parser.default['AUTHOR_NAME']) in body)

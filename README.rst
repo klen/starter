@@ -12,8 +12,7 @@ Starter -- Create the skeleton for new projects.
 Requirements
 =============
 
-- python >= 2.6
-- Jinja >= 1.2
+- python >= 2.7, 3.3
 
 
 Installation
@@ -26,7 +25,27 @@ Installation
 
 Usage
 =====
+::
 
+    $ starter --help
+    usage: starter [-h] [-s SOURCE] [-l {debug,info,warn,error,critical}]
+                [-c CONFIG] [-x [CONTEXT [CONTEXT ...]]] [-v]
+                TEMPLATES [TARGET]
+
+    positional arguments:
+    TEMPLATES             Clone templates (comma separated list)
+    TARGET                Target path
+
+    optional arguments:
+    -h, --help            show this help message and exit
+    -s SOURCE             Template's source
+    -l {debug,info,warn,error,critical}
+                            Verbose level (info)
+    -c CONFIG, --config CONFIG
+                            Path to configuration file
+    -x [CONTEXT [CONTEXT ...]]
+                            Define context (NAME:VALUE)
+    -v, --version         Show Starter version
 
 
 Bug tracker

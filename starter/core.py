@@ -134,11 +134,11 @@ class Starter(FS):
         self.parser.default['templates'] = tt = ','.join(t.name for t in templates)
         logging.warning("Paste templates: {0}".format(tt))
         self.make_directory(self.params.TARGET)
-        return map(lambda t: t.paste(**self.parser.default), templates)
+        return list(map(lambda t: t.paste(**self.parser.default), templates))
 
     def prepare_templates(self):
         to_template = partial(map, lambda t: Template(t, tpldirs=self.tpldirs))
-        templates = to_template(self.params.TEMPLATES)
+        templates = list(to_template(self.params.TEMPLATES))
         cache = set(templates)
 
         def open_templates(*templates):
