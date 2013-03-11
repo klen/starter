@@ -1,2 +1,3 @@
 recursive-include starter *
+include requirements.txt
 exclude *.pyc *.orig
