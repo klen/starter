@@ -10,7 +10,7 @@ from . import CURDIR, __version__, __project__
 PARSER = ArgumentParser(description=__doc__)
 PARSER.add_argument(
     'TEMPLATES', help='Clone templates (comma separated list)',
-    type=lambda s: filter(None, s.split(','))
+    type=lambda s: list(filter(None, s.split(',')))
 )
 PARSER.add_argument(
     'TARGET', nargs='?', default=CURDIR, help='Target path')
