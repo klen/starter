@@ -17,6 +17,14 @@ class StarterTests(TestCase):
         self.params = PARSER.parse_args(['test'])
         setup_logging(0)
 
+    def test_parse(self):
+        params = PARSER.parse_args([
+            "python-module", "mirror", "-x", "MODULE:mirror", "AUTHOR:user", "blabla"
+        ])
+        self.assertEqual(params.TARGET, "mirror")
+        self.assertEqual(params.TEMPLATES, ["python-module"])
+        self.assertEqual(params.context, [("MODULE", "mirror"), ("AUTHOR", "user"), ("blabla", "")])
+
     def test_template(self):
 
         t = Template('django', source='starter/templates/python-module')
