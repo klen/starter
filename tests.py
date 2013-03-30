@@ -126,11 +126,16 @@ class StarterTests(TestCase):
     def test_list_templates(self):
         starter = Starter(self.params)
         self.assertEqual(
-            list(starter.list_templates()),
-            ['python-module', 'starter-module']
+            sorted(list(starter.list_templates())),
+            sorted(['python-module', 'starter-module'])
         )
         starter = Starter(self.params, TESTDIR)
         self.assertEqual(
-            list(starter.list_templates()),
-            ['custom', 'include', 'john', 'python-module', 'starter-module']
+            sorted(list(starter.list_templates())),
+            sorted([
+                'custom',
+                'include',
+                'john',
+                'python-module',
+                'starter-module'])
         )
