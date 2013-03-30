@@ -42,6 +42,7 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3.3',
     ],
 
     entry_points={
@@ -52,6 +53,8 @@ setup(
 
     packages = find_packages(),
     package_data=dict(starter=package_data),
-    install_requires = [l for l in read('requirements.txt').split('\n') if l and not l.startswith('#')],
+    install_requires = [
+        l for l in read('requirements.txt').split('\n')
+        if l and not l.startswith('#')],
     test_suite = 'tests',
 )
