@@ -1,5 +1,6 @@
 import sys
 from argparse import ArgumentParser
+import logging
 
 from . import CURDIR, __version__, __project__
 
@@ -9,7 +10,9 @@ from . import CURDIR, __version__, __project__
 
 PARSER = ArgumentParser(description=__doc__)
 PARSER.add_argument(
-    'TEMPLATES', help='Clone templates (comma separated list)',
+    'TEMPLATES', nargs='?',
+    default='',
+    help='Clone templates (comma separated list)',
     type=lambda s: list(filter(None, s.split(',')))
 )
 PARSER.add_argument(
@@ -22,8 +25,14 @@ PARSER.add_argument(
 PARSER.add_argument(
     '-c', '--config', help='Path to configuration file')
 PARSER.add_argument(
-    '-x', dest='context', default=[], nargs='*', help='Define context (NAME:VALUE)',
+    '-x', dest='context', default=[], nargs='*',
+    help='Define context (NAME:VALUE)',
     type=lambda s: s.partition(':')[::2]
+)
+PARSER.add_argument(
+    '-t', '--list',
+    action="store_true",
+    help='List available templates'
 )
 PARSER.add_argument(
     '-v', '--version', action='version',
@@ -40,10 +49,17 @@ def run(*args):
     from .core import Starter
 
     starter = Starter(params)
+
+    if params.list:
+        templates = sorted(starter.list_templates())
+        for t in templates:
+            logging.warn(t)
+        return True
+
     try:
         starter.copy()
-    except Exception as e:
-        import logging
+
+    except Exception as e: # nolint
         logging.error(e)
 
 

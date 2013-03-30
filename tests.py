@@ -19,21 +19,25 @@ class StarterTests(TestCase):
 
     def test_parse(self):
         params = PARSER.parse_args([
-            "python-module", "mirror", "-x", "MODULE:mirror", "AUTHOR:user", "blabla"
+            "python-module", "mirror", "-x", "MODULE:mirror",
+            "AUTHOR:user", "blabla"
         ])
         self.assertEqual(params.TARGET, "mirror")
         self.assertEqual(params.TEMPLATES, ["python-module"])
-        self.assertEqual(params.context, [("MODULE", "mirror"), ("AUTHOR", "user"), ("blabla", "")])
+        self.assertEqual(params.context, [("MODULE", "mirror"), (
+            "AUTHOR", "user"), ("blabla", "")])
 
     def test_template(self):
 
         t = Template('django', source='starter/templates/python-module')
-        self.assertEqual(t.configuration, 'starter/templates/python-module.ini')
+        self.assertEqual(
+            t.configuration, 'starter/templates/python-module.ini')
 
-        t = Template('custom', tplparams=dict(custom=op.join(TESTDIR, 'custom')))
+        t = Template('custom', tplparams=dict(
+            custom=op.join(TESTDIR, 'custom')))
         self.assertEqual(t.name, 'custom')
 
-        t = Template('python-module')
+        t = Template('python-module', tpldirs=Starter.default_tmpldirs)
         self.assertEqual(op.basename(t.configuration), 'python-module.ini')
         self.assertTrue(t.path.endswith('starter/templates/python-module'))
 
@@ -56,7 +60,8 @@ class StarterTests(TestCase):
     def test_starter_init(self):
         self.params.config = op.join(TESTDIR, 'custom.ini')
         starter = Starter(self.params, TESTDIR)
-        self.assertEqual(starter.parser.default['deploy_dir'], op.dirname(TESTDIR))
+        self.assertEqual(starter.parser.default[
+                         'deploy_dir'], op.dirname(TESTDIR))
         self.assertEqual(starter.parser.default['customkey'], 'customvalue')
 
         self.params.context = [('foo', 'bar')]
@@ -83,7 +88,8 @@ class StarterTests(TestCase):
             body = f.read()
             self.assertTrue(target_dir in body)
             self.assertTrue('customvalue' in body)
-            self.assertTrue('boss = {0}'.format(starter.parser.default['USER']) in body)
+            self.assertTrue('boss = {0}'.format(
+                starter.parser.default['USER']) in body)
 
         f = op.join(target_dir, 'test_customvalue.ls')
         with open(f) as f:
@@ -94,7 +100,7 @@ class StarterTests(TestCase):
         starter = Starter(self.params, TESTDIR)
         try:
             starter.copy()
-        except AssertionError as e:
+        except ValueError as e:
             self.assertTrue(e)
         except:
             raise
@@ -112,4 +118,19 @@ class StarterTests(TestCase):
         self.assertEqual(starter.parser.default['AUTHOR_NAME'], 'John Conor')
         with open(op.join(target_dir, 'LICENSE')) as f:
             body = f.read()
-            self.assertTrue("Copyright (c) {0} by {1}".format(starter.parser.default['datetime'][:4], starter.parser.default['AUTHOR_NAME']) in body)
+            self.assertTrue(
+                "Copyright (c) {0} by {1}".format(starter.parser.default[
+                'datetime'][:4],
+                    starter.parser.default['AUTHOR_NAME']) in body)
+
+    def test_list_templates(self):
+        starter = Starter(self.params)
+        self.assertEqual(
+            list(starter.list_templates()),
+            ['python-module', 'starter-module']
+        )
+        starter = Starter(self.params, TESTDIR)
+        self.assertEqual(
+            list(starter.list_templates()),
+            ['custom', 'include', 'john', 'python-module', 'starter-module']
+        )

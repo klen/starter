@@ -9,7 +9,7 @@ from os import getcwd, path as op
 # Module information
 # ==================
 
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 __project__ = 'Starter'
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "BSD"
@@ -20,4 +20,5 @@ __license__ = "BSD"
 
 CFGFILE = '.starter.ini'
 CURDIR = getcwd()
-TPLDIR = op.relpath(op.join(op.dirname(__file__), 'templates'))
+BUILTIN_TMPLDIR = op.relpath(op.join(op.dirname(__file__), 'templates'))
+HOME_TMPLDIR_NAME = 'starter.d'
