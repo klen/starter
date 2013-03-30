@@ -37,7 +37,7 @@ class StarterTests(TestCase):
             custom=op.join(TESTDIR, 'custom')))
         self.assertEqual(t.name, 'custom')
 
-        t = Template('python-module')
+        t = Template('python-module', tpldirs=Starter.default_tmpldirs)
         self.assertEqual(op.basename(t.configuration), 'python-module.ini')
         self.assertTrue(t.path.endswith('starter/templates/python-module'))
 
@@ -100,7 +100,7 @@ class StarterTests(TestCase):
         starter = Starter(self.params, TESTDIR)
         try:
             starter.copy()
-        except AssertionError as e:
+        except ValueError as e:
             self.assertTrue(e)
         except:
             raise
@@ -122,3 +122,15 @@ class StarterTests(TestCase):
                 "Copyright (c) {0} by {1}".format(starter.parser.default[
                 'datetime'][:4],
                     starter.parser.default['AUTHOR_NAME']) in body)
+
+    def test_list_templates(self):
+        starter = Starter(self.params)
+        self.assertEqual(
+            list(starter.list_templates()),
+            ['python-module', 'starter-module']
+        )
+        starter = Starter(self.params, TESTDIR)
+        self.assertEqual(
+            list(starter.list_templates()),
+            ['custom', 'include', 'john', 'python-module', 'starter-module']
+        )

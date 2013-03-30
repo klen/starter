@@ -20,4 +20,5 @@ __license__ = "BSD"
 
 CFGFILE = '.starter.ini'
 CURDIR = getcwd()
-TPLDIR = op.relpath(op.join(op.dirname(__file__), 'templates'))
+BUILTIN_TMPLDIR = op.relpath(op.join(op.dirname(__file__), 'templates'))
+HOME_TMPLDIR_NAME = 'starter.d'
