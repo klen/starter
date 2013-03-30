@@ -13,16 +13,24 @@ from os import path as op, walk
 from setuptools import setup
 
 
-def read(fname):
+def read(path):
     try:
-        return open(op.join(op.dirname(__file__), fname)).read()
+        return open(op.join(op.dirname(__file__), path)).read()
     except IOError:
         return ''
 
 package_data = []
-for root, dirs, files in walk(op.join('starter', 'templates', '{{ MODULE }}')):
-    for fname in filter(lambda f: not f.endswith('.pyc'), files):
-        package_data.append(op.join(fname))
+template_path = op.join('starter', 'templates', '{{ MODULE }}')
+for root, dirs, files in walk(template_path):
+    if "/.env" in root:
+        continue
+
+    for fname in filter(lambda f: not f.endswith('.pyc'), files): # nolint
+        fpath = op.join(root, fname)
+        package_data.append(op.relpath(
+            fpath,
+            template_path
+        ))
 
 setup(
     name="starter.templates.{{ MODULE }}",
@@ -42,8 +50,10 @@ setup(
         'Programming Language :: Python',
     ],
 
-    packages=['starter', 'starter.templates', 'starter.templates.{{ MODULE }}'],
-    package_data={ "starter.templates.{{ MODULE }}": package_data, "starter.templates": ["{{ MODULE }}.ini"] },
+    packages=['starter', 'starter.templates',
+              'starter.templates.{{ MODULE }}'],
+    package_data={"starter.templates.{{ MODULE }}":
+                  package_data, "starter.templates": ["{{ MODULE }}.ini"] },
     namespace_packages=["starter", "starter.templates"],
     install_requires = ["starter"],
 )

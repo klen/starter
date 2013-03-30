@@ -125,12 +125,7 @@ class StarterTests(TestCase):
 
     def test_list_templates(self):
         starter = Starter(self.params)
-        self.assertEqual(
-            list(starter.list_templates()),
-            ['python-module', 'starter-module']
-        )
+        self.assertTrue('python-module' in starter.list_templates())
+
         starter = Starter(self.params, TESTDIR)
-        self.assertEqual(
-            list(starter.list_templates()),
-            ['custom', 'include', 'john', 'python-module', 'starter-module']
-        )
+        self.assertTrue('custom' in starter.list_templates())
