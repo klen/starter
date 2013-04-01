@@ -2,8 +2,14 @@ MODULE=starter
 SPHINXBUILD=sphinx-build
 ALLSPHINXOPTS= -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 BUILDDIR=_build
+VIRTUALENV=.env
 
-all: .env
+all: $(VIRTUALENV)
+
+$(VIRTUALENV): requirements.txt
+	@virtualenv --no-site-packages .env
+	@$(VIRTUALENV)/bin/pip install -M -r requirements.txt
+	touch $(VIRTUALENV)
 
 .PHONY: help
 # target: help - Display callable targets
@@ -47,7 +53,3 @@ docs:
 .PHONY: pep8
 pep8:
 	@find $(MODULE) -name "*.py" | xargs -n 1 autopep8 -i
-
-.env: requirements.txt
-	@virtualenv --no-site-packages .env
-	.env/bin/pip install -M -r requirements.txt
