@@ -1,13 +1,13 @@
+VIRTUALENV=$(shell echo "$${VDIR:-'.env'}")
 MODULE=starter
 SPHINXBUILD=sphinx-build
 ALLSPHINXOPTS= -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 BUILDDIR=_build
-VIRTUALENV=.env
 
 all: $(VIRTUALENV)
 
 $(VIRTUALENV): requirements.txt
-	@virtualenv --no-site-packages .env
+	@virtualenv --no-site-packages $(VIRTUALENV)
 	@$(VIRTUALENV)/bin/pip install -M -r requirements.txt
 	touch $(VIRTUALENV)
 
