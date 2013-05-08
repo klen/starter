@@ -1,8 +1,8 @@
+VIRTUALENV=$(shell echo "$${VDIR:-'.env'}")
 MODULE=starter
 SPHINXBUILD=sphinx-build
 ALLSPHINXOPTS= -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 BUILDDIR=_build
-VIRTUALENV=$(shell echo "$${VDIR:-'.env'}")
 
 all: $(VIRTUALENV)
 
