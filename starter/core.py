@@ -154,6 +154,10 @@ class Starter(FS):
             t.name for t in templates)
         logging.warning("Paste templates: {0}".format(tt))
         self.make_directory(self.params.TARGET)
+
+        logging.debug("Default context:")
+        logging.debug(self.parser.default)
+
         return [t.paste(**self.parser.default) for t in templates]
 
     def prepare_templates(self):

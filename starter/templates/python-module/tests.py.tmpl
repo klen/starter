@@ -1,9 +1,7 @@
-from os import path as op
-
 from unittest import TestCase
 
 
-class {{ MODULE|capitalize }}Tests(TestCase):
+class {{ MODULE|capitalize|replace("-", "_") }}Tests(TestCase):
 
     def test_base(self):
         from {{ MODULE }} import __version__
