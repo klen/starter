@@ -1,4 +1,4 @@
 # Development requirements
-Inirama>=0.2.6
+Inirama>=0.2.8
 Jinja2==2.6
 oset>=0.1.3
