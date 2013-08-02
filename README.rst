@@ -27,6 +27,12 @@ Starter -- Create the skeleton for new projects.
     :target: https://www.gittip.com/klen/
     :alt: Donate
 
+
+.. _documentation:
+
+**Docs are available at https://starter.readthedocs.org/. Pull requests with documentation enhancements and/or fixes are awesome and most welcome.**
+
+
 .. _contents:
 
 .. contents::

@@ -2,6 +2,10 @@
     Creates the sceleton for new projects.
     Similar to the template part of PasteScript, but uses Jinja templates.
 
+
+    :copyright: 2013 by Kirill Klenov.
+    :license: BSD, see LICENSE for more details.
+
 """
 from os import getcwd, path as op
 
