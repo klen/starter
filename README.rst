@@ -15,11 +15,11 @@ Starter -- Create the skeleton for new projects.
     :target: https://coveralls.io/r/klen/starter
     :alt: Coverals
 
-.. image:: https://pypip.in/v/starter/badge.png
+.. image:: https://pypip.in/v/Starter/badge.png
     :target: https://crate.io/packages/starter
     :alt: Version
 
-.. image:: https://pypip.in/d/starter/badge.png
+.. image:: https://pypip.in/d/Starter/badge.png
     :target: https://crate.io/packages/starter
     :alt: Downloads
 
