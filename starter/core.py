@@ -6,23 +6,41 @@ from os import path as op, walk, environ, makedirs, listdir
 import logging
 import shutil
 from functools import partial
-from inirama import InterpolationNamespace
-from jinja2 import Environment, FileSystemLoader
+from inirama import InterpolationNamespace, InterpolationSection, OrderedDict
+from jinja2 import Environment, FileSystemLoader, Template as JinjaTemplate
 from oset import oset
 
-from . import CFGFILE, CURDIR, BUILTIN_TMPLDIR, HOME_TMPLDIR_NAME
+from . import CFGFILE, CURDIR, BUILTIN_TMPLDIR, HOME_TMPLDIR_NAME, _compat
 
 
 # Application
 # ===========
 
+class JinjaInterpolationSection(InterpolationSection):
+
+    """ Interpolate Jinja vars in ini files. """
+
+    var_re = re.compile('{{([^}]+)}}')
+
+    def __interpolate__(self, math):
+        t = JinjaTemplate(math.group(0))
+        return t.render(**dict(self.items(raw=True)))
+
+
+class JinjaInterpolationNamespace(InterpolationNamespace):
+
+    """ Interpolate Jinja vars in ini files. """
+
+    section_type = JinjaInterpolationSection
+
+
 class FS(object):
-    """ File system interface.
-    """
+
+    """ File system interface. """
+
     @staticmethod
     def make_directory(path):
-        """ Creates directory if that not exists.
-        """
+        """ Create directory if that not exists. """
         try:
             makedirs(path)
             logging.debug('Directory created: {0}'.format(path))
@@ -32,8 +50,7 @@ class FS(object):
                 raise
 
     def copy_file(self, from_path, to_path):
-        """ Copy file.
-        """
+        """ Copy file. """
         if not op.exists(op.dirname(to_path)):
             self.make_directory(op.dirname(to_path))
 
@@ -43,24 +60,20 @@ class FS(object):
 
 class Template(FS):
 
-    tpl_ext = '.tmpl'
-    cfg_ext = '.ini'
-    var_re = re.compile(r'\+([^\+]+)\+')
+    """ Implement template object. """
 
-    def __init__(self, name, source=None, tplparams=None, tpldirs=None):
+    tpl_ext = '.j2'
+    var_re = re.compile(r'\{\{([^\}]+)\}\}')
+
+    def __init__(self, name, source='', dirs=None):
         self.name = name
-
-        tplparams = tplparams or dict()
-        source = (source or tplparams.get(name))
-
         self.path = source
-        if tpldirs and (not self.path or not op.exists(self.path)):
-            for d in tpldirs:
-                self.path = op.join(d, name)
-                if op.exists(self.path):
-                    break
-            else:
-                raise ValueError("Template `{0}` not found.".format(name))
+        dirs = list(dirs or [])
+        try:
+            while not op.exists(self.configuration):
+                self.path = op.join(dirs.pop(), name)
+        except (IndexError, AttributeError):
+            raise ValueError("Template `%s` not found." % name)
 
         self.env = Environment(loader=FileSystemLoader(self.path))
 
@@ -85,26 +98,31 @@ class Template(FS):
 
     @property
     def configuration(self):
-        """ Return path to template configuration.
-        """
-        name = op.basename(self.path)
-        return op.join(
-            op.dirname(self.path),
-            '{0}{1}'.format(name, self.cfg_ext))
+        """ Return path to template configuration. """
+        return op.join(self.path, CFGFILE)
+
+    @property
+    def params(self):
+        """ Read self params from configuration. """
+        parser = JinjaInterpolationNamespace()
+        parser.read(self.configuration)
+        return dict(parser['params'] or {})
 
     def paste(self, **context):
         logging.info('Paste template: {0}'.format(self.name))
         for source, rel in self.files:
-            target = op.join(context.get('deploy_dir', CURDIR), rel)
+            target = op.join(context.get('_TRGDIR', CURDIR), rel)
 
             # Interpolate vars in file path
             target = self.var_re.sub(
                 lambda m: context.get(m.group(1), ''), target)
 
+            # Copy files
             if not rel.endswith(self.tpl_ext):
                 self.copy_file(source, target)
                 continue
 
+            # Render and copy templates
             target = target[:-len(self.tpl_ext)]
             self.make_directory(op.dirname(target))
             with open(target, 'w') as f:
@@ -112,44 +130,73 @@ class Template(FS):
                 f.write(t.render(**context))
                 logging.debug('Template rendered: `{0}`'.format(f.name))
 
+    @classmethod
+    def scan(cls, path):
+        """ Scan directory for templates. """
+        result = []
+        try:
+            for _p in listdir(path):
+                try:
+                    result.append(Template(_p, op.join(path, _p)))
+                except ValueError:
+                    continue
+        except OSError:
+            pass
+
+        return result
+
 
 class Starter(FS):
-    """ Clone templates to file system.
-    """
+
+    """ Clone templates to file system. """
 
     # Seek user configs
-    default_configs = map(lambda d: op.abspath(op.join(d, CFGFILE)), [ # nolint
-        environ.get('HOME', '~'),
-        CURDIR
-    ])
+    default_configs = [
+        op.abspath(op.join(path, CFGFILE)) for path in (
+            environ.get('HOME', '~'), CURDIR)
+    ]
 
     # Seek templates
     default_tmpldirs = [
-        op.join(environ.get('HOME', '~'), HOME_TMPLDIR_NAME),
-        BUILTIN_TMPLDIR]
-    include_key = '__include__'
+        op.join(environ.get('HOME', '~'), HOME_TMPLDIR_NAME), BUILTIN_TMPLDIR]
 
-    def __init__(self, params, *tpldirs):
-        """ Save params and create INI parser.
-        """
+    def __init__(self, params, *dirs):
+        """ Save params and create INI parser. """
         self.params = params
-        self.tpldirs = list(tpldirs) + self.default_tmpldirs
+        self.dirs = list(dirs) + self.default_tmpldirs
 
         # Initialize parser
-        self.parser = InterpolationNamespace(
-            current_dir=CURDIR,
-            deploy_dir=self.params.TARGET,
-            datetime=datetime.now(),
-            USER=environ.get("USER"),
-            **dict(params.context)
-        )
+        context = {
+            '_TRGDIR': self.params.TARGET,
+            '_CURDIR': CURDIR,
+            '_USER': environ.get("USER"),
+            '_DATETIME': datetime.now(),
+        }
+        context.update(params.context)
+        self.parser = JinjaInterpolationNamespace(**context)
         self.parser.read(*self.default_configs)
         self.parser.read(self.params.config)
 
     def copy(self):
-        """ Prepare and paste self templates.
-        """
+        """ Prepare and paste self templates. """
         templates = self.prepare_templates()
+        if self.params.interactive:
+            keys = list(self.parser.default)
+            for key in keys:
+                if key.startswith('_'):
+                    continue
+                prompt = "{0} (default is \"{1}\")? ".format(
+                    key, self.parser.default[key])
+
+                if _compat.PY2:
+                    value = raw_input(prompt.encode('utf-8')).decode('utf-8')
+                else:
+                    value = input(prompt.encode('utf-8'))
+
+                value = value.strip()
+                if value:
+                    self.parser.default[key] = value
+
         self.parser.default['templates'] = tt = ','.join(
             t.name for t in templates)
         logging.warning("Paste templates: {0}".format(tt))
@@ -158,13 +205,13 @@ class Starter(FS):
         logging.debug("\nDefault context:\n----------------")
         logging.debug(
             ''.join('{0:<15} {1}\n'.format(*v)
-            for v in sorted(self.parser.default.items()))
+                    for v in self.parser.default.items())
         )
-
-        return [t.paste(**self.parser.default) for t in templates]
+        return [t.paste(
+            **dict(self.parser.default.items())) for t in templates]
 
     def prepare_templates(self):
-        to_template = partial(map, lambda t: Template(t, tpldirs=self.tpldirs))
+        to_template = partial(map, lambda t: Template(t, dirs=self.dirs))
         templates = list(to_template(self.params.TEMPLATES))
         cache = set(templates)
 
@@ -175,11 +222,11 @@ class Starter(FS):
                 cache.add(t)
 
                 try:
-                    include = self.parser['templates'].pop(self.include_key)
+                    include = self.parser['params'].pop('include')
                     include = filter(None, oset(
                         include.replace(' ', '').split(',')))
-                    requirements = filter( # nolint
-                        lambda t: not t in cache, to_template(include))
+                    requirements = filter(  # noqa
+                        lambda t: t not in cache, to_template(include))
                     for tt in open_templates(*requirements):
                         yield tt
                 except KeyError:
@@ -189,15 +236,13 @@ class Starter(FS):
 
         return list(open_templates(*templates))
 
-    def list_templates(self):
-        for dd in self.tpldirs:
-            if not op.exists(dd):
-                continue
+    def iterate_templates(self):
+        """ Iterate self starter templates.
 
-            for pp in listdir(dd):
-                pp = op.join(dd, pp)
-                if op.isdir(pp):
-                    yield op.basename(pp)
+        :returns: A templates generator
+
+        """
+        return [t for dd in self.dirs for t in Template.scan(dd)]
 
     def __repr__(self):
-        return "<Starter '{0}'>".format(CURDIR)
+        return "<Starter '%s'>" % CURDIR

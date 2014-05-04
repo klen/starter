@@ -7,7 +7,7 @@ from functools import partial
 # Logging utils
 # =============
 
-COLORS = lambda c, t: "\033[{0}m{1}\033[0m".format(c, t)
+COLORS = lambda c, t: "\033[{0}m{1}\033[0m".format(c, t) # noqa
 COLORS.red = partial(COLORS, 31)
 COLORS.green = partial(COLORS, 32)
 COLORS.yellow = partial(COLORS, 33)
@@ -18,8 +18,8 @@ COLORS.white = partial(COLORS, 37)
 
 
 class ColoredFormater(logging.Formatter):
-    """ Support terminal's colored output.
-    """
+
+    """ Support terminal's colored output. """
 
     def format(self, record):
         s = logging.Formatter.format(self, record)
@@ -46,5 +46,6 @@ if sys.stdout.isatty():
 
 
 def setup_logging(level):
+    """ Setup logger. """
     logging.root.setLevel(level)
     logging.root.addHandler(STREAM_HANDLER)
