@@ -1,131 +1,134 @@
 from os import path as op
-
-from tempfile import mkdtemp
-from unittest import TestCase
+import pytest
 
 from starter.core import Starter, Template
-from starter.log import setup_logging
-from starter.main import PARSER
 
 
-TESTDIR = op.join(op.dirname(__file__), 'tests')
+TESTDIR = op.join(op.dirname(__file__), 'tests', 'templates')
 
 
-class StarterTests(TestCase):
+@pytest.fixture(scope='module')
+def params():
+    from starter.log import setup_logging
+    from starter.main import PARSER
 
-    def setUp(self):
-        self.params = PARSER.parse_args(['test'])
-        setup_logging(0)
+    setup_logging(0)
+    return PARSER.parse_args(['test'])
 
-    def test_parse(self):
-        params = PARSER.parse_args([
-            "python-module", "mirror", "-x", "MODULE:mirror",
-            "AUTHOR:user", "blabla"
-        ])
-        self.assertEqual(params.TARGET, "mirror")
-        self.assertEqual(params.TEMPLATES, ["python-module"])
-        self.assertEqual(params.context, [("MODULE", "mirror"), (
-            "AUTHOR", "user"), ("blabla", "")])
 
-    def test_template(self):
+def test_parse(params):
+    from starter.main import PARSER
 
-        t = Template('django', source='starter/templates/python-module')
-        self.assertEqual(
-            t.configuration, 'starter/templates/python-module.ini')
+    params = PARSER.parse_args([
+        "python-package", "mirror", "-x", "MODULE:mirror",
+        "AUTHOR:user", "blabla"
+    ])
+    assert params.TARGET == "mirror"
+    assert params.TEMPLATES == ["python-package"]
+    assert params.context == [
+        ("MODULE", "mirror"), ("AUTHOR", "user"), ("blabla", "")]
 
-        t = Template('custom', tplparams=dict(
-            custom=op.join(TESTDIR, 'custom')))
-        self.assertEqual(t.name, 'custom')
 
-        t = Template('python-module', tpldirs=Starter.default_tmpldirs)
-        self.assertEqual(op.basename(t.configuration), 'python-module.ini')
-        self.assertTrue(t.path.endswith('starter/templates/python-module'))
+def test_template(params):
 
-        T = lambda n: Template(n, tpldirs=[TESTDIR])
+    templates = Template.scan(TESTDIR)
+    assert len(templates) == 3
 
-        # Check base template properties
-        t = T('custom')
-        self.assertEqual(t.path, op.join(TESTDIR, 'custom'))
-        self.assertEqual(len(list(t.files)), 4)
-        self.assertEqual(t.configuration, op.join(TESTDIR, 'custom.ini'))
+    t = Template('django', source='starter/templates/python-package')
+    assert t.configuration == 'starter/templates/python-package/starter.ini'
 
-        t1 = T('custom')
-        self.assertEqual(t, t1)
+    t = Template('python-package', dirs=Starter.default_tmpldirs)
+    assert t.path.endswith('starter/templates/python-package')
 
-        self.assertEqual(
-            set((T('custom'), T('include'), T('include'))),
-            set((T('custom'), T('include')))
-        )
+    T = lambda n: Template(n, dirs=[TESTDIR])
 
-    def test_starter_init(self):
-        self.params.config = op.join(TESTDIR, 'custom.ini')
-        starter = Starter(self.params, TESTDIR)
-        self.assertEqual(starter.parser.default[
-                         'deploy_dir'], op.dirname(TESTDIR))
-        self.assertEqual(starter.parser.default['customkey'], 'customvalue')
+    # Check base template properties
+    t = T('custom')
+    assert t.path == op.join(TESTDIR, 'custom')
+    assert len(list(t.files)) == 4
+    assert t.configuration == op.join(TESTDIR, t.name, 'starter.ini')
 
-        self.params.context = [('foo', 'bar')]
-        starter = Starter(self.params, TESTDIR)
-        self.assertEqual(starter.parser.default['foo'], 'bar')
+    t1 = T('custom')
+    assert t == t1
 
-    def test_starter_copy(self):
-        target_dir = mkdtemp()
+    assert (
+        set((T('custom'), T('include'), T('include'))) == set((T('custom'), T('include'))) # noqa
+    )
 
-        self.params.TEMPLATES = ['custom']
-        self.params.TARGET = target_dir
 
-        starter = Starter(self.params, TESTDIR)
-        self.assertEqual(starter.parser.default['deploy_dir'], target_dir)
-        templates = starter.prepare_templates()
-        self.assertTrue(templates)
+def test_starter_init(params):
+    params.config = op.join(op.dirname(TESTDIR), 'config.ini')
 
+    starter = Starter(params, TESTDIR)
+    assert starter.parser.default['_TRGDIR'] == params.TARGET
+    assert starter.parser.default['customkey'] == 'customvalue'
+
+    params.context = [('foo', 'bar')]
+    starter = Starter(params, TESTDIR)
+    assert starter.parser.default['foo'] == 'bar'
+
+
+def test_starter_copy(params, tmpdir):
+
+    tmpdir = str(tmpdir)
+    params.TEMPLATES = ['custom']
+    params.TARGET = tmpdir
+
+    starter = Starter(params, TESTDIR)
+    assert starter.parser.default['_TRGDIR'] == tmpdir
+
+    templates = starter.prepare_templates()
+    assert [t.name for t in templates] == ['include', 'john', 'custom']
+
+    starter.copy()
+
+    assert op.isfile(op.join(tmpdir, 'root_file'))
+
+    assert op.isfile(op.join(tmpdir, 'dir', 'file'))
+    t = op.join(tmpdir, 'dir', 'template')
+
+    with open(t) as f:
+        body = f.read()
+        assert tmpdir in body
+        assert 'customvalue' in body
+        assert 'boss = %s' % starter.parser.default['_USER'] in body
+
+    f = op.join(tmpdir, 'test_customvalue.ls')
+    with open(f) as f:
+        assert f
+
+
+def test_template_not_found(params):
+    params.TEMPLATES = ['custom2']
+    starter = Starter(params, TESTDIR)
+    with pytest.raises(ValueError):
         starter.copy()
 
-        self.assertTrue(op.isfile(op.join(target_dir, 'root_file')))
-        self.assertTrue(op.isfile(op.join(target_dir, 'dir', 'file')))
-        t = op.join(target_dir, 'dir', 'template')
-        with open(t) as f:
-            body = f.read()
-            self.assertTrue(target_dir in body)
-            self.assertTrue('customvalue' in body)
-            self.assertTrue('boss = {0}'.format(
-                starter.parser.default['USER']) in body)
 
-        f = op.join(target_dir, 'test_customvalue.ls')
-        with open(f) as f:
-            self.assertTrue(f)
+def test_builtin_templates(params, tmpdir):
+    tmpdir = str(tmpdir)
 
-    def test_template_not_found(self):
-        self.params.TEMPLATES = ['custom2']
-        starter = Starter(self.params, TESTDIR)
-        try:
-            starter.copy()
-        except ValueError as e:
-            self.assertTrue(e)
-        except:
-            raise
+    params.TEMPLATES = ['python-package']
+    params.TARGET = tmpdir
 
-    def test_builtin_templates(self):
-        target_dir = mkdtemp()
-        self.params.TEMPLATES = ['python-module']
-        self.params.TARGET = target_dir
+    starter = Starter(params)
+    starter.parser.default['AUTHOR_NAME'] = 'John Conor'
 
-        starter = Starter(self.params)
-        self.params.TARGET = mkdtemp()
-        starter.parser.default['AUTHOR_NAME'] = 'John Conor'
+    starter.copy()
+    assert starter.parser.default['AUTHOR_NAME'] == 'John Conor'
 
-        starter.copy()
-        self.assertEqual(starter.parser.default['AUTHOR_NAME'], 'John Conor')
-        with open(op.join(target_dir, 'LICENSE')) as f:
-            body = f.read()
-            self.assertTrue(
-                "Copyright (c) {0} by {1}".format(starter.parser.default[
-                'datetime'][:4],
-                    starter.parser.default['AUTHOR_NAME']) in body)
+    with open(op.join(tmpdir, 'LICENSE')) as f:
+        body = f.read()
+        assert ("Copyright (c) {0}, {1}".format(
+                starter.parser.default['_DATETIME'][:4],
+                starter.parser.default['AUTHOR_NAME']) in body)
 
-    def test_list_templates(self):
-        starter = Starter(self.params)
-        self.assertTrue('python-module' in starter.list_templates())
 
-        starter = Starter(self.params, TESTDIR)
-        self.assertTrue('custom' in starter.list_templates())
+def test_list_templates(params):
+    starter = Starter(params)
+    assert 'python-package' in [t.name for t in starter.iterate_templates()]
+
+    starter = Starter(params, TESTDIR)
+    assert 'custom' in [t.name for t in starter.iterate_templates()]
+
+# pylama:ignore=W0621

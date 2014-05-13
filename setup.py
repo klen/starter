@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""
+""".
+
 Starter
 -------
 
@@ -15,7 +16,7 @@ from setuptools import setup, find_packages
 from starter import __version__, __project__, __license__
 
 
-def read(fname):
+def _read(fname):
     try:
         return open(op.join(op.dirname(__file__), fname)).read()
     except IOError:
@@ -30,8 +31,8 @@ setup(
     name=__project__,
     version=__version__,
     license=__license__,
-    description=read('DESCRIPTION'),
-    long_description=read('README.rst'),
+    description=_read('DESCRIPTION'),
+    long_description=_read('README.rst'),
     platforms=('Any'),
 
     author='Kirill Klenov',
@@ -47,14 +48,13 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'starter = starter.main:run',
+            'starter = starter.main:main',
         ]
     },
 
-    packages = find_packages(),
+    packages=find_packages(),
     package_data=dict(starter=package_data),
-    install_requires = [
-        l for l in read('requirements.txt').split('\n')
+    install_requires=[
+        l for l in _read('requirements.txt').split('\n')
         if l and not l.startswith('#')],
-    test_suite = 'tests',
 )

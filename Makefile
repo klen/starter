@@ -38,7 +38,8 @@ upload:
 .PHONY: t
 # target: t - Runs tests
 t: clean
-	@python setup.py test
+	@pip install -r requirements-tests.txt
+	@py.test
 
 .PHONY: audit
 # target: audit - Audit code
