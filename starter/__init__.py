@@ -13,7 +13,7 @@ from os import getcwd, path as op
 # Module information
 # ==================
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 __project__ = 'Starter'
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "BSD"
