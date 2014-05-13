@@ -20,11 +20,11 @@ def test_parse(params):
     from starter.main import PARSER
 
     params = PARSER.parse_args([
-        "python-package", "mirror", "-x", "MODULE:mirror",
+        "py-package", "mirror", "-x", "MODULE:mirror",
         "AUTHOR:user", "blabla"
     ])
     assert params.TARGET == "mirror"
-    assert params.TEMPLATES == ["python-package"]
+    assert params.TEMPLATES == ["py-package"]
     assert params.context == [
         ("MODULE", "mirror"), ("AUTHOR", "user"), ("blabla", "")]
 
@@ -34,11 +34,11 @@ def test_template(params):
     templates = Template.scan(TESTDIR)
     assert len(templates) == 3
 
-    t = Template('django', source='starter/templates/python-package')
-    assert t.configuration == 'starter/templates/python-package/starter.ini'
+    t = Template('django', source='starter/templates/py-package')
+    assert t.configuration == 'starter/templates/py-package/starter.ini'
 
-    t = Template('python-package', dirs=Starter.default_tmpldirs)
-    assert t.path.endswith('starter/templates/python-package')
+    t = Template('py-package', dirs=Starter.default_tmpldirs)
+    assert t.path.endswith('starter/templates/py-package')
 
     T = lambda n: Template(n, dirs=[TESTDIR])
 
@@ -108,7 +108,7 @@ def test_template_not_found(params):
 def test_builtin_templates(params, tmpdir):
     tmpdir = str(tmpdir)
 
-    params.TEMPLATES = ['python-package']
+    params.TEMPLATES = ['py-package']
     params.TARGET = tmpdir
 
     starter = Starter(params)
@@ -126,7 +126,7 @@ def test_builtin_templates(params, tmpdir):
 
 def test_list_templates(params):
     starter = Starter(params)
-    assert 'python-package' in [t.name for t in starter.iterate_templates()]
+    assert 'py-package' in [t.name for t in starter.iterate_templates()]
 
     starter = Starter(params, TESTDIR)
     assert 'custom' in [t.name for t in starter.iterate_templates()]
