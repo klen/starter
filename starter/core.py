@@ -6,7 +6,7 @@ from os import path as op, walk, environ, makedirs, listdir
 import logging
 import shutil
 from functools import partial
-from inirama import InterpolationNamespace, InterpolationSection, OrderedDict
+from inirama import InterpolationNamespace, InterpolationSection
 from jinja2 import Environment, FileSystemLoader, Template as JinjaTemplate
 from oset import oset
 
