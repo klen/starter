@@ -24,11 +24,11 @@ clean:
 register:
 	@python setup.py register
 
-.PHONY: release
-# target: release - Upload module on PyPi
+.PHONY: upload
+# target: upload - Upload module on PyPi
 release: clean
-	@python setup.py sdist upload || echo 'Upload already'
-	@python setup.py bdist_whell upload || echo 'Upload already'
+	@python setup.py sdist upload || echo 'Skip sdist upload'
+	@python setup.py bdist_wheel upload || echo 'Skip bdist upload'
 
 .PHONY: test
 # target: test - Runs tests
