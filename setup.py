@@ -8,12 +8,12 @@ Starter
 Starter -- Create the skeleton for new projects.
 
 """
-
+import re
 from os import path as op, walk
+import sys
 
 from setuptools import setup, find_packages
-
-from starter import __version__, __project__, __license__
+from setuptools.command.test import test as TestCommand
 
 
 def _read(fname):
@@ -22,15 +22,45 @@ def _read(fname):
     except IOError:
         return ''
 
+_meta = _read('starter/__init__.py')
+_license = re.search(r'^__license__\s*=\s*"(.*)"', _meta, re.M).group(1)
+_project = re.search(r'^__project__\s*=\s*"(.*)"', _meta, re.M).group(1)
+_version = re.search(r'^__version__\s*=\s*"(.*)"', _meta, re.M).group(1)
+
+install_requires = [
+    l for l in _read('requirements.txt').split('\n')
+    if l and not l.startswith('#')]
+
+tests_require = [
+    l for l in _read('requirements-tests.txt').split('\n')
+    if l and not l.startswith('#')]
+
+
+class __PyTest(TestCommand):
+
+    test_args = []
+    test_suite = True
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)
+
+
 package_data = ['*.ini', '*.sh']
-for root, dirs, files in walk(op.join(__project__, 'templates')):
+for root, dirs, files in walk(op.join(_project, 'templates')):
     for filename in files:
-        package_data.append("%s/%s" % (root[len(__project__) + 1:], filename))
+        package_data.append("%s/%s" % (root[len(_project) + 1:], filename))
 
 setup(
-    name=__project__,
-    version=__version__,
-    license=__license__,
+    name=_project,
+    version=_version,
+    license=_license,
     description=_read('DESCRIPTION'),
     long_description=_read('README.rst'),
     platforms=('Any'),
@@ -54,7 +84,7 @@ setup(
 
     packages=find_packages(),
     package_data=dict(starter=package_data),
-    install_requires=[
-        l for l in _read('requirements.txt').split('\n')
-        if l and not l.startswith('#')],
+    install_requires=install_requires,
+    tests_require=tests_require,
+    cmdclass={'test': __PyTest},
 )

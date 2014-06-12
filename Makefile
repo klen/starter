@@ -1,15 +1,11 @@
-VIRTUALENV=$(shell echo "$${VDIR:-'.env'}")
-MODULE=starter
-SPHINXBUILD=sphinx-build
-ALLSPHINXOPTS= -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
-BUILDDIR=_build
+VENV=$(shell echo "$${VENV:-'.env'}")
+PACKAGE=starter
 
-all: $(VIRTUALENV)
+all: $(VENV)
 
-$(VIRTUALENV): requirements.txt
-	@virtualenv --no-site-packages $(VIRTUALENV)
-	@$(VIRTUALENV)/bin/pip install -M -r requirements.txt
-	touch $(VIRTUALENV)
+$(VENV): requirements.txt
+	[ -d $(VENV) ] || virtualenv --no-site-packages $(VENV)
+	$(VENV)/bin/pip install -r requirements.txt
 
 .PHONY: help
 # target: help - Display callable targets
@@ -19,37 +15,38 @@ help:
 .PHONY: clean
 # target: clean - Display callable targets
 clean:
-	@rm -rf build dist docs/_build
-	@rm -f *.py[co]
-	@rm -f *.orig
-	@rm -f */*.py[co]
-	@rm -f */*.orig
+	rm -rf build/ dist/ docs/_build *.egg-info
+	find $(CURDIR) -name "*.py[co]" -delete
+	find $(CURDIR) -name "*.orig" -delete
 
 .PHONY: register
 # target: register - Register module on PyPi
 register:
 	@python setup.py register
 
-.PHONY: upload
-# target: upload - Upload module on PyPi
-upload:
+.PHONY: release
+# target: release - Upload module on PyPi
+release: clean
 	@python setup.py sdist upload || echo 'Upload already'
+	@python setup.py bdist_wheel upload || echo 'Upload already'
+
+.PHONY: test
+# target: test - Runs tests
+test: clean
+	@python setup.py test
 
 .PHONY: t
-# target: t - Runs tests
-t: clean
-	@pip install -r requirements-tests.txt
-	@py.test
+t: test
 
 .PHONY: audit
 # target: audit - Audit code
 audit:
-	@pylama $(MODULE) -i E501
+	@pip install pylama
+	@pylama $(MODULE)
 
-.PHONY: docs
-docs:
-	@python setup.py build_sphinx --source-dir=docs/ --build-dir=docs/_build --all-files
-
-.PHONY: pep8
-pep8:
-	@find $(MODULE) -name "*.py" | xargs -n 1 autopep8 -i
+.PHONY: doc
+doc: docs
+	@pip install sphinx
+	@pip install sphinx-pypi-upload
+	python setup.py build_sphinx --source-dir=docs/ --build-dir=docs/_build --all-files
+	python setup.py upload_sphinx --upload-dir=docs/_build/html
