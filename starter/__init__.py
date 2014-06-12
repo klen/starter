@@ -14,7 +14,7 @@ from os import getcwd, path as op
 # ==================
 
 __version__ = "0.4.2"
-__project__ = "starter"
+__project__ = "Starter"
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "BSD"
 

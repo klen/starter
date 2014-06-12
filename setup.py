@@ -57,6 +57,7 @@ for root, dirs, files in walk(op.join(_project, 'templates')):
     for filename in files:
         package_data.append("%s/%s" % (root[len(_project) + 1:], filename))
 
+
 setup(
     name=_project,
     version=_version,
